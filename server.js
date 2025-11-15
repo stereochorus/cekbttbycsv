@@ -13,14 +13,16 @@ fastify.register(require('@fastify/helmet'), {
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"], // For inline scripts in index.html
+            styleSrc: ["'self'", "'unsafe-inline'"], // For inline styles in index.html
+            scriptSrc: ["'self'"], // No unsafe-inline - using event listeners instead
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'"],
             fontSrc: ["'self'"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             frameSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
         },
     },
     crossOriginEmbedderPolicy: false,

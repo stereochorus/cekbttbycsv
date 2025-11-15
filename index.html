@@ -226,7 +226,7 @@
         <div class="upload-section">
             <div class="file-input-wrapper">
                 <input type="file" id="csvFile" accept=".csv" />
-                <button id="uploadBtn" onclick="processCSV()">Proses CSV</button>
+                <button id="uploadBtn">Proses CSV</button>
             </div>
         </div>
 
@@ -238,7 +238,7 @@
         </div>
 
         <div class="export-section" id="exportSection" style="display: none;">
-            <button class="btn-export" onclick="exportToCSV()">Export ke CSV</button>
+            <button class="btn-export" id="exportBtn">Export ke CSV</button>
         </div>
 
         <div class="table-section">
@@ -504,6 +504,22 @@
             link.click();
             document.body.removeChild(link);
         }
+
+        // Security: Attach event listeners instead of inline onclick
+        // This prevents CSP violations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Upload button
+            const uploadBtn = document.getElementById('uploadBtn');
+            if (uploadBtn) {
+                uploadBtn.addEventListener('click', processCSV);
+            }
+
+            // Export button
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', exportToCSV);
+            }
+        });
     </script>
 </body>
 </html>
