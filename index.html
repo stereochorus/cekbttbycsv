@@ -262,6 +262,25 @@
     <script>
         let resultsData = [];
 
+        // Security: HTML escape function to prevent XSS
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '-';
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Security: Validate BTT format
+        function validateBTT(btt) {
+            if (!btt || typeof btt !== 'string') return false;
+            if (btt.length > 50) return false;
+            // Only allow alphanumeric and common separators
+            return /^[a-zA-Z0-9\-_]+$/.test(btt);
+        }
+
         async function processCSV() {
             const fileInput = document.getElementById('csvFile');
             const file = fileInput.files[0];
@@ -273,6 +292,13 @@
 
             if (!file.name.endsWith('.csv')) {
                 alert('File harus berformat CSV!');
+                return;
+            }
+
+            // Security: File size validation (5MB max)
+            const MAX_FILE_SIZE = 5 * 1024 * 1024;
+            if (file.size > MAX_FILE_SIZE) {
+                alert('File terlalu besar! Maksimum 5MB.');
                 return;
             }
 
@@ -298,6 +324,12 @@
                     throw new Error('File CSV kosong atau tidak ada data!');
                 }
 
+                // Security: Limit number of lines (max 1000)
+                const MAX_LINES = 1000;
+                if (dataLines.length > MAX_LINES) {
+                    throw new Error(`Terlalu banyak data! Maksimum ${MAX_LINES} baris.`);
+                }
+
                 document.getElementById('statusMessage').textContent = `Memproses ${dataLines.length} BTT...`;
 
                 // Show table
@@ -309,21 +341,30 @@
                     if (!line) continue;
 
                     // Extract BTT (could be first column or the entire line)
-                    const btt = line.split(',')[0].trim().replace(/['"]/g, '');
+                    let btt = line.split(',')[0].trim().replace(/['"]/g, '');
+
+                    // Security: Validate BTT format
+                    if (!validateBTT(btt)) {
+                        console.warn(`Invalid BTT format: ${btt}`);
+                        continue; // Skip invalid BTT
+                    }
 
                     // Update progress
                     const progress = Math.round(((i + 1) / dataLines.length) * 100);
                     document.getElementById('progressFill').style.width = progress + '%';
                     document.getElementById('progressFill').textContent = progress + '%';
-                    document.getElementById('statusMessage').textContent = `Memproses ${i + 1}/${dataLines.length}: ${btt}`;
+                    document.getElementById('statusMessage').textContent = `Memproses ${i + 1}/${dataLines.length}: ${escapeHtml(btt)}`;
 
-                    // Add temporary row
+                    // Add temporary row - Using textContent for security
                     const tempRow = document.getElementById('tableBody').insertRow();
-                    tempRow.innerHTML = `
-                        <td>${i + 1}</td>
-                        <td>${btt}</td>
-                        <td colspan="4"><div class="loading"></div> Mengambil data...</td>
-                    `;
+                    const cell1 = tempRow.insertCell(0);
+                    const cell2 = tempRow.insertCell(1);
+                    const cell3 = tempRow.insertCell(2);
+
+                    cell1.textContent = i + 1;
+                    cell2.textContent = btt;
+                    cell3.colSpan = 4;
+                    cell3.innerHTML = '<div class="loading"></div> Mengambil data...';
 
                     try {
                         // Call API through Node.js proxy
@@ -364,15 +405,26 @@
                             status: status
                         });
 
-                        // Update row
-                        tempRow.innerHTML = `
-                            <td>${i + 1}</td>
-                            <td>${btt}</td>
-                            <td>${tanggal}</td>
-                            <td>${keterangan}</td>
-                            <td>${posisi}</td>
-                            <td><span class="status-badge ${statusClass}">${status}</span></td>
-                        `;
+                        // Security: Update row using textContent to prevent XSS
+                        tempRow.innerHTML = ''; // Clear first
+                        const c1 = tempRow.insertCell(0);
+                        const c2 = tempRow.insertCell(1);
+                        const c3 = tempRow.insertCell(2);
+                        const c4 = tempRow.insertCell(3);
+                        const c5 = tempRow.insertCell(4);
+                        const c6 = tempRow.insertCell(5);
+
+                        c1.textContent = i + 1;
+                        c2.textContent = btt;
+                        c3.textContent = tanggal;
+                        c4.textContent = keterangan;
+                        c5.textContent = posisi;
+
+                        // Status badge with safe HTML
+                        const badge = document.createElement('span');
+                        badge.className = `status-badge ${statusClass}`;
+                        badge.textContent = status;
+                        c6.appendChild(badge);
 
                     } catch (error) {
                         console.error(`Error processing ${btt}:`, error);
@@ -387,15 +439,25 @@
                             status: 'ERROR'
                         });
 
-                        // Update row with error
-                        tempRow.innerHTML = `
-                            <td>${i + 1}</td>
-                            <td>${btt}</td>
-                            <td>-</td>
-                            <td>Error: ${error.message}</td>
-                            <td>-</td>
-                            <td><span class="status-badge status-error">ERROR</span></td>
-                        `;
+                        // Security: Update row with error using textContent
+                        tempRow.innerHTML = ''; // Clear first
+                        const e1 = tempRow.insertCell(0);
+                        const e2 = tempRow.insertCell(1);
+                        const e3 = tempRow.insertCell(2);
+                        const e4 = tempRow.insertCell(3);
+                        const e5 = tempRow.insertCell(4);
+                        const e6 = tempRow.insertCell(5);
+
+                        e1.textContent = i + 1;
+                        e2.textContent = btt;
+                        e3.textContent = '-';
+                        e4.textContent = 'Error: ' + error.message;
+                        e5.textContent = '-';
+
+                        const errorBadge = document.createElement('span');
+                        errorBadge.className = 'status-badge status-error';
+                        errorBadge.textContent = 'ERROR';
+                        e6.appendChild(errorBadge);
                     }
 
                     // Small delay to prevent rate limiting

@@ -7,13 +7,20 @@
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "keywords": ["tracking", "csv", "fastify"],
+  "keywords": [
+    "tracking",
+    "csv",
+    "fastify"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "fastify": "^4.25.2",
-    "@fastify/static": "^6.12.0",
     "@fastify/cors": "^8.5.0",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/rate-limit": "^9.1.0",
+    "@fastify/static": "^6.12.0",
+    "dotenv": "^17.2.3",
+    "fastify": "^4.25.2",
     "node-fetch": "^2.7.0"
   }
 }
