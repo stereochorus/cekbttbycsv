@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEK Tracing - Upload CSV</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 2px dashed #667eea;
+        }
+
+        .file-input-wrapper {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input[type="file"] {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .table-section {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:nth-child(even):hover {
+            background: #e9ecef;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-delivered {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-onprocess {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .export-section {
+            margin-top: 20px;
+            text-align: right;
+        }
+
+        .btn-export {
+            background: #28a745;
+        }
+
+        .btn-export:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CEK Tracing - Upload CSV & Track BTT</h1>
+
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="csvFile" accept=".csv" />
+                <button id="uploadBtn" onclick="processCSV()">Proses CSV</button>
+            </div>
+        </div>
+
+        <div class="progress-section" id="progressSection">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <div class="status-message info" id="statusMessage">Memproses data...</div>
+        </div>
+
+        <div class="export-section" id="exportSection" style="display: none;">
+            <button class="btn-export" onclick="exportToCSV()">Export ke CSV</button>
+        </div>
+
+        <div class="table-section">
+            <table id="resultTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>NO</th>
+                        <th>BTT</th>
+                        <th>TANGGAL HISTORY</th>
+                        <th>KETERANGAN</th>
+                        <th>POSISI</th>
+                        <th>STATUS</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let resultsData = [];
+
+        async function processCSV() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Silakan pilih file CSV terlebih dahulu!');
+                return;
+            }
+
+            if (!file.name.endsWith('.csv')) {
+                alert('File harus berformat CSV!');
+                return;
+            }
+
+            // Reset
+            resultsData = [];
+            document.getElementById('tableBody').innerHTML = '';
+            document.getElementById('resultTable').style.display = 'none';
+            document.getElementById('exportSection').style.display = 'none';
+
+            // Show progress
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('uploadBtn').disabled = true;
+
+            try {
+                const text = await file.text();
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+
+                // Remove header if exists
+                const startIndex = lines[0].toLowerCase().includes('btt') || lines[0].toLowerCase().includes('no') ? 1 : 0;
+                const dataLines = lines.slice(startIndex);
+
+                if (dataLines.length === 0) {
+                    throw new Error('File CSV kosong atau tidak ada data!');
+                }
+
+                document.getElementById('statusMessage').textContent = `Memproses ${dataLines.length} BTT...`;
+
+                // Show table
+                document.getElementById('resultTable').style.display = 'table';
+
+                // Process each line
+                for (let i = 0; i < dataLines.length; i++) {
+                    const line = dataLines[i].trim();
+                    if (!line) continue;
+
+                    // Extract BTT (could be first column or the entire line)
+                    const btt = line.split(',')[0].trim().replace(/['"]/g, '');
+
+                    // Update progress
+                    const progress = Math.round(((i + 1) / dataLines.length) * 100);
+                    document.getElementById('progressFill').style.width = progress + '%';
+                    document.getElementById('progressFill').textContent = progress + '%';
+                    document.getElementById('statusMessage').textContent = `Memproses ${i + 1}/${dataLines.length}: ${btt}`;
+
+                    // Add temporary row
+                    const tempRow = document.getElementById('tableBody').insertRow();
+                    tempRow.innerHTML = `
+                        <td>${i + 1}</td>
+                        <td>${btt}</td>
+                        <td colspan="4"><div class="loading"></div> Mengambil data...</td>
+                    `;
+
+                    try {
+                        // Call API through Node.js proxy
+                        const response = await fetch(`/api/trace?b=${encodeURIComponent(btt)}`);
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+
+                        let tanggal = '-';
+                        let keterangan = '-';
+                        let posisi = '-';
+                        let status = '-';
+                        let statusClass = 'status-error';
+
+                        if (data && data.detail) {
+                            tanggal = data.detail.tanggal || '-';
+                            keterangan = data.detail.keterangan || '-';
+                            posisi = data.detail.posisi || '-';
+                            status = data.detail.status || '-';
+
+                            if (status.toLowerCase() === 'delivered') {
+                                statusClass = 'status-delivered';
+                            } else if (status !== '-') {
+                                statusClass = 'status-onprocess';
+                            }
+                        }
+
+                        // Store result
+                        resultsData.push({
+                            no: i + 1,
+                            btt: btt,
+                            tanggal: tanggal,
+                            keterangan: keterangan,
+                            posisi: posisi,
+                            status: status
+                        });
+
+                        // Update row
+                        tempRow.innerHTML = `
+                            <td>${i + 1}</td>
+                            <td>${btt}</td>
+                            <td>${tanggal}</td>
+                            <td>${keterangan}</td>
+                            <td>${posisi}</td>
+                            <td><span class="status-badge ${statusClass}">${status}</span></td>
+                        `;
+
+                    } catch (error) {
+                        console.error(`Error processing ${btt}:`, error);
+
+                        // Store error result
+                        resultsData.push({
+                            no: i + 1,
+                            btt: btt,
+                            tanggal: '-',
+                            keterangan: 'Error: ' + error.message,
+                            posisi: '-',
+                            status: 'ERROR'
+                        });
+
+                        // Update row with error
+                        tempRow.innerHTML = `
+                            <td>${i + 1}</td>
+                            <td>${btt}</td>
+                            <td>-</td>
+                            <td>Error: ${error.message}</td>
+                            <td>-</td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                        `;
+                    }
+
+                    // Small delay to prevent rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+
+                // Complete
+                document.getElementById('statusMessage').className = 'status-message success';
+                document.getElementById('statusMessage').textContent = `Selesai! ${dataLines.length} BTT berhasil diproses.`;
+                document.getElementById('exportSection').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('statusMessage').className = 'status-message error';
+                document.getElementById('statusMessage').textContent = 'Error: ' + error.message;
+            } finally {
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+
+        function exportToCSV() {
+            if (resultsData.length === 0) {
+                alert('Tidak ada data untuk di-export!');
+                return;
+            }
+
+            // Create CSV content
+            let csvContent = 'NO,BTT,TANGGAL HISTORY,KETERANGAN,POSISI,STATUS\n';
+
+            resultsData.forEach(row => {
+                csvContent += `${row.no},"${row.btt}","${row.tanggal}","${row.keterangan}","${row.posisi}","${row.status}"\n`;
+            });
+
+            // Download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `tracking_results_${new Date().getTime()}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "cektracing",
+  "version": "1.0.0",
+  "description": "CEK Tracing - Upload CSV & Track BTT",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["tracking", "csv", "fastify"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fastify": "^4.25.2",
+    "@fastify/static": "^6.12.0",
+    "@fastify/cors": "^8.5.0",
+    "node-fetch": "^2.7.0"
+  }
+}
